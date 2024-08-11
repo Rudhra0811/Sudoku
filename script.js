@@ -2,14 +2,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('sudoku-board');
     const newGameBtn = document.getElementById('new-game');
     const checkSolutionBtn = document.getElementById('check-solution');
+    const saveGameBtn = document.getElementById('save-game');
+    const loadGameBtn = document.getElementById('load-game');
     const numberPad = document.getElementById('number-pad');
     const eraseBtn = document.getElementById('erase');
     const timerDisplay = document.getElementById('timer');
+    const difficultyDisplay = document.getElementById('difficulty');
+    const difficultySelect = document.getElementById('difficulty-select');
+    const hintButton = document.getElementById('hint-button');
+    const hintsLeftDisplay = document.getElementById('hints-left');
 
     let puzzle = [];
     let solution = [];
     let timer;
     let seconds = 0;
+    let difficulty = 'medium';
+    let hintsLeft = 3;
 
     function createBoard() {
         board.innerHTML = '';
@@ -72,11 +80,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createPuzzleFromSolution() {
-        const cellsToRemove = 40;
+        const cellsToRemove = getDifficultyCellsToRemove();
         const indexes = shuffle([...Array(81).keys()]);
 
         for (let i = 0; i < cellsToRemove; i++) {
             puzzle[indexes[i]] = 0;
+        }
+    }
+
+    function getDifficultyCellsToRemove() {
+        switch (difficulty) {
+            case 'easy': return 30;
+            case 'medium': return 40;
+            case 'hard': return 50;
+            default: return 40;
         }
     }
 
@@ -90,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cell.textContent = '';
                 cell.classList.remove('initial');
             }
-            cell.classList.remove('correct', 'incorrect');
+            cell.classList.remove('correct', 'incorrect', 'hint');
         });
     }
 
@@ -107,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
         generatePuzzle();
         resetTimer();
         startTimer();
+        updateDifficultyDisplay();
+        resetHints();
     }
 
     function handleNumberInput(number) {
@@ -114,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selectedCell || selectedCell.classList.contains('initial')) return;
 
         selectedCell.textContent = number;
-        selectedCell.classList.remove('correct', 'incorrect');
+        selectedCell.classList.remove('correct', 'incorrect', 'hint');
     }
 
     function handleErase() {
@@ -122,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selectedCell || selectedCell.classList.contains('initial')) return;
 
         selectedCell.textContent = '';
-        selectedCell.classList.remove('correct', 'incorrect');
+        selectedCell.classList.remove('correct', 'incorrect', 'hint');
     }
 
     function checkSolution() {
@@ -173,8 +192,84 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
+    function updateDifficultyDisplay() {
+        difficultyDisplay.textContent = `Difficulty: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+    }
+
+    function saveGame() {
+        const gameState = {
+            puzzle,
+            solution,
+            seconds,
+            difficulty,
+            hintsLeft
+        };
+        localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
+        alert('Game saved successfully!');
+    }
+
+    function loadGame() {
+        const savedState = localStorage.getItem('sudokuGameState');
+        if (savedState) {
+            const gameState = JSON.parse(savedState);
+            puzzle = gameState.puzzle;
+            solution = gameState.solution;
+            seconds = gameState.seconds;
+            difficulty = gameState.difficulty;
+            hintsLeft = gameState.hintsLeft;
+
+            displayPuzzle();
+            resetTimer();
+            startTimer();
+            updateDifficultyDisplay();
+            updateHintsLeft();
+            difficultySelect.value = difficulty;
+
+            alert('Game loaded successfully!');
+        } else {
+            alert('No saved game found.');
+        }
+    }
+
+    function getHint() {
+        if (hintsLeft > 0) {
+            const emptyCells = Array.from(document.querySelectorAll('.cell')).filter(cell => !cell.textContent && !cell.classList.contains('initial'));
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const index = parseInt(randomCell.dataset.index);
+                randomCell.textContent = solution[index];
+                randomCell.classList.add('hint');
+                hintsLeft--;
+                updateHintsLeft();
+            } else {
+                alert('No empty cells left to provide a hint!');
+            }
+        } else {
+            alert('No hints left!');
+        }
+    }
+
+    function resetHints() {
+        hintsLeft = 3;
+        updateHintsLeft();
+    }
+
+    function updateHintsLeft() {
+        hintsLeftDisplay.textContent = `Hints left: ${hintsLeft}`;
+    }
+
+    function changeDifficulty() {
+        difficulty = difficultySelect.value;
+        updateDifficultyDisplay();
+        initGame();
+    }
+
     newGameBtn.addEventListener('click', initGame);
     checkSolutionBtn.addEventListener('click', checkSolution);
+    saveGameBtn.addEventListener('click', saveGame);
+    loadGameBtn.addEventListener('click', loadGame);
+    hintButton.addEventListener('click', getHint);
+    difficultySelect.addEventListener('change', changeDifficulty);
 
     numberPad.addEventListener('click', (e) => {
         if (e.target.classList.contains('number')) {
