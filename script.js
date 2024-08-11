@@ -2,9 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('sudoku-board');
     const newGameBtn = document.getElementById('new-game');
     const checkSolutionBtn = document.getElementById('check-solution');
+    const numberPad = document.getElementById('number-pad');
+    const eraseBtn = document.getElementById('erase');
+    const timerDisplay = document.getElementById('timer');
 
     let puzzle = [];
     let solution = [];
+    let timer;
+    let seconds = 0;
 
     function createBoard() {
         board.innerHTML = '';
@@ -24,17 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generatePuzzle() {
-        // Initialize arrays
         puzzle = Array(81).fill(0);
         solution = Array(81).fill(0);
-
-        // Generate solution
         generateSolution(0);
-
-        // Create puzzle by removing numbers
         createPuzzleFromSolution();
-
-        // Display puzzle
         displayPuzzle();
     }
 
@@ -43,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const row = Math.floor(index / 9);
         const col = index % 9;
-
         const numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
         for (let num of numbers) {
@@ -58,17 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isValid(board, row, col, num) {
-        // Check row
         for (let i = 0; i < 9; i++) {
             if (board[row * 9 + i] === num) return false;
-        }
-
-        // Check column
-        for (let i = 0; i < 9; i++) {
             if (board[i * 9 + col] === num) return false;
         }
 
-        // Check 3x3 box
         const boxRow = Math.floor(row / 3) * 3;
         const boxCol = Math.floor(col / 3) * 3;
         for (let i = 0; i < 3; i++) {
@@ -81,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createPuzzleFromSolution() {
-        const cellsToRemove = 40; // Adjust difficulty by changing this number
+        const cellsToRemove = 40;
         const indexes = shuffle([...Array(81).keys()]);
 
         for (let i = 0; i < cellsToRemove; i++) {
@@ -99,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cell.textContent = '';
                 cell.classList.remove('initial');
             }
+            cell.classList.remove('correct', 'incorrect');
         });
     }
 
@@ -113,27 +105,84 @@ document.addEventListener('DOMContentLoaded', () => {
     function initGame() {
         createBoard();
         generatePuzzle();
+        resetTimer();
+        startTimer();
     }
 
-    function handleKeyPress(e) {
+    function handleNumberInput(number) {
         const selectedCell = document.querySelector('.selected');
         if (!selectedCell || selectedCell.classList.contains('initial')) return;
 
-        const key = e.key;
-        if (key >= '1' && key <= '9') {
-            selectedCell.textContent = key;
-        } else if (key === 'Backspace' || key === 'Delete') {
-            selectedCell.textContent = '';
+        selectedCell.textContent = number;
+        selectedCell.classList.remove('correct', 'incorrect');
+    }
+
+    function handleErase() {
+        const selectedCell = document.querySelector('.selected');
+        if (!selectedCell || selectedCell.classList.contains('initial')) return;
+
+        selectedCell.textContent = '';
+        selectedCell.classList.remove('correct', 'incorrect');
+    }
+
+    function checkSolution() {
+        const cells = document.querySelectorAll('.cell');
+        let allCorrect = true;
+
+        cells.forEach((cell, index) => {
+            const value = cell.textContent;
+            if (value === '') {
+                allCorrect = false;
+                cell.classList.add('incorrect');
+            } else if (parseInt(value) === solution[index]) {
+                cell.classList.add('correct');
+                cell.classList.remove('incorrect');
+            } else {
+                allCorrect = false;
+                cell.classList.add('incorrect');
+                cell.classList.remove('correct');
+            }
+        });
+
+        if (allCorrect) {
+            stopTimer();
+            alert(`Congratulations! You solved the puzzle in ${formatTime(seconds)}`);
         }
     }
 
+    function startTimer() {
+        timer = setInterval(() => {
+            seconds++;
+            timerDisplay.textContent = `Time: ${formatTime(seconds)}`;
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timer);
+    }
+
+    function resetTimer() {
+        stopTimer();
+        seconds = 0;
+        timerDisplay.textContent = 'Time: 00:00';
+    }
+
+    function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
     newGameBtn.addEventListener('click', initGame);
-    checkSolutionBtn.addEventListener('click', () => {
-        // TODO: Implement solution checking
-        console.log('Checking solution...');
+    checkSolutionBtn.addEventListener('click', checkSolution);
+
+    numberPad.addEventListener('click', (e) => {
+        if (e.target.classList.contains('number')) {
+            handleNumberInput(e.target.dataset.number);
+        }
     });
 
-    document.addEventListener('keydown', handleKeyPress);
+    eraseBtn.addEventListener('click', handleErase);
 
     initGame();
 });
