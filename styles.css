@@ -45,6 +45,15 @@ h1 {
     border-bottom: 2px solid #000;
 }
 
+.cell.selected {
+    background-color: #e6f3ff;
+}
+
+.cell.initial {
+    font-weight: bold;
+    color: #00008B;
+}
+
 .controls {
     margin-top: 20px;
 }
