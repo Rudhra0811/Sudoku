@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const difficultySelect = document.getElementById('difficulty-select');
     const hintButton = document.getElementById('hint-button');
     const hintsLeftDisplay = document.getElementById('hints-left');
+    const darkModeToggle = document.getElementById('dark-mode-switch');
 
     let puzzle = [];
     let solution = [];
@@ -83,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cellsToRemove = getDifficultyCellsToRemove();
         const indexes = shuffle([...Array(81).keys()]);
 
+        puzzle = [...solution];
         for (let i = 0; i < cellsToRemove; i++) {
             puzzle[indexes[i]] = 0;
         }
@@ -90,10 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getDifficultyCellsToRemove() {
         switch (difficulty) {
-            case 'easy': return 30;
-            case 'medium': return 40;
-            case 'hard': return 50;
-            default: return 40;
+            case 'easy': return 40;
+            case 'medium': return 50;
+            case 'hard': return 60;
+            default: return 50;
         }
     }
 
@@ -264,12 +266,17 @@ document.addEventListener('DOMContentLoaded', () => {
         initGame();
     }
 
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+    }
+
     newGameBtn.addEventListener('click', initGame);
     checkSolutionBtn.addEventListener('click', checkSolution);
     saveGameBtn.addEventListener('click', saveGame);
     loadGameBtn.addEventListener('click', loadGame);
     hintButton.addEventListener('click', getHint);
     difficultySelect.addEventListener('change', changeDifficulty);
+    darkModeToggle.addEventListener('change', toggleDarkMode);
 
     numberPad.addEventListener('click', (e) => {
         if (e.target.classList.contains('number')) {
@@ -279,5 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     eraseBtn.addEventListener('click', handleErase);
 
+    // Initialize the game
     initGame();
 });
